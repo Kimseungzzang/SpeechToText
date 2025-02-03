@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Drag and Drop Audio File</title>
+    <style>
+        .drop-zone {
+            border: 2px dashed #4caf50;
+            padding: 50px;
+            width: 300px;
+            text-align: center;
+            margin: 50px auto;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            width: 80%;
+            margin: 20px auto;
+            text-align: center;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+<div class="drop-zone" id="dropZone">
+    오디오 파일을 여기에 드래그 앤 드롭하세요.
+</div>
+
+<div id="result">
+    <!-- 텍스트 결과가 여기에 표시됩니다 -->
+    결과가 여기 나타납니다.
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        const dropZone = $('#dropZone');
+        dropZone.on('dragover', function(event) {
+            event.preventDefault();
+            dropZone.css('border-color', '#4caf50');
+        });
+        dropZone.on('dragleave', function() {
+            dropZone.css('border-color', '#4caf50');
+        });
+        dropZone.on('drop', function(event) {
+            event.preventDefault();
+            const file = event.originalEvent.dataTransfer.files[0];
+            uploadFile(file);
+        });
+    });
+
+    function uploadFile(file) {
+        const formData = new FormData();
+        formData.append('audio', file);
+
+        $.ajax({
+            url: '/upload', // 백엔드 서버 경로
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                console.log('파일 업로드 성공:', response);
+                // 오디오 인식 처리 호출
+                convertSpeechToText(response);
+            },
+            error: function(error) {
+                console.error('파일 업로드 실패:', error);
+            }
+        });
+    }
+
+    function convertSpeechToText(audioFilePath) {
+        fetch('/convert', {  // 백엔드 서버 경로
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ audioFilePath: audioFilePath })
+        })
+            .then(response => response.text())
+            .then(text => {
+                text = text.trim();
+                console.log('오디오 인식 결과:', text);
+
+                // 백엔드로 인식된 텍스트를 다시 보내기
+                return fetch('/processText', {  // 텍스트를 처리할 백엔드 서버 경로
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ recognizedText: text })
+                });
+            })
+            .then(response => response.text())
+            .then(responseData => {
+                responseData = responseData.trim();
+                console.log('텍스트 처리 성공:', responseData);
+
+                // 웹페이지에 결과 표시
+                document.getElementById('result').textContent = '텍스트 처리 결과: ' + responseData;
+            })
+            .catch(error => {
+                console.error('오디오 인식 또는 텍스트 처리 실패:', error);
+            });
+    }
+</script>
+</body>
+</html>
