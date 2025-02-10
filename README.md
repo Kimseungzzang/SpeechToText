@@ -39,4 +39,8 @@
 
 ---
 
+### 실행화면
+
+<img width="858" alt="스크린샷 2025-02-10 오후 3 08 53" src="https://github.com/user-attachments/assets/67effecc-b726-47ce-9754-4e6f39a1b445" />
+
 
